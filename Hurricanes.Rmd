@@ -1,0 +1,175 @@
+Hurricanes: the female of the species in no more deadly than the male
+========================================================
+
+This is a re-analysis of the Jung *et al* paper [Female hurricanes are deadlier than male hurricanes](http://dx.doi.org/10.1073/pnas.1402786111), complete with the R code. 
+
+First, read in the data, and do some simple arrangements, in particular selecting an ironic colour scheme, and noting which hurricanes killed more than 100 people.
+```{r message=FALSE}
+library(gdata)
+library(mgcv)
+
+# Read in the data
+Data=read.xls("http://www.pnas.org/content/suppl/2014/05/30/1402786111.DCSupplemental/pnas.1402786111.sd01.xlsx", nrows=92, as.is=TRUE)
+Data$Category=factor(Data$Category)
+Data$Gender_MF=factor(Data$Gender_MF)
+Data$ColourMF=c("lightblue", "pink")[as.numeric(Data$Gender_MF)]
+BigH=which(Data$alldeaths>100) # Select hurricanes with > 100 deaths
+# scale the covariates
+Data$Minpressure.2014.sc=scale(Data$Minpressure_Updated.2014)
+Data$NDAM.sc=scale(Data$NDAM)
+Data$MasFem.sc=scale(Data$MasFem)
+
+```
+
+Then, plot the data
+
+```{r fig.width=7, fig.height=6}
+plot(Data$Year, Data$alldeaths, col=Data$ColourMF, type="p", pch=15,
+     xlab="Year", ylab="Number of Deaths", main="Deaths due to hurricanes in the US")
+text(Data$Year[BigH], Data$alldeaths[BigH], Data$Name[BigH], adj=c(0.8,1.5))
+legend(1984, 200, c("Male", "Female"), fill=c("lightblue", "pink"))
+```
+We can see that the four most deadly hurricanes all had female names Given that `r round(100*mean(Data$Gender_MF==1))`% of hurricanes had female names, the probability that the top 4 were all female is `r round(factorial(sum(Data$Gender_MF==1))/factorial(sum(Data$Gender_MF==1)-4)/(factorial(length(Data$Gender_MF))/factorial(length(Data$Gender_MF)-4)),2)`. So, on its own this is not remarkable.
+
+So, now fit the model that was used in the paper. Results might differ slightly, because I'm probably using a different package for the fitting (mgcv: for those wondering about this, I was using it to smooth the year effects):
+
+```{r }
+# Fit the model used in paper
+modJSVH=gam(alldeaths~MasFem.sc*(Minpressure.2014.sc+NDAM.sc), data=Data, family=negbin(theta=c(0.2,10)))
+summary(modJSVH)
+```
+From this we can see no main effect of gender, i.e. at average minimum perssure and normalised damage there is no difference if the name is really masculine or feminine. But there are interactions: at higher minimum pressure and normalised damage, feminine names are associated with more deaths.
+
+Now we be good little statisticians, and look at how well the model fits. Because I did the 2S2 stats course at Leeds Uni (um, about a quarter of a century ago), I'll plot some residuals:
+
+```{r fig.width=7, fig.height=6}
+par(mfrow=c(1,1), mar=c(4.1,4.1,3,1))
+plot(log(fitted(modJSVH)), resid(modJSVH), col=Data$ColourMF, ylim=c(min(resid(modJSVH)), 0.5+max(resid(modJSVH))), pch=15,
+     xlab="Fitted values", ylab="Residuals", main="Residual plot against log-transformed fitted values")
+text(log(fitted(modJSVH)[BigH]), resid(modJSVH)[BigH], Data$Name[BigH], adj=c(0.7,-0.7))
+legend(1984, 200, c("Male", "Female"), fill=c("lightblue", "pink"))
+```
+(if I don't log-transform the fitted values, Sandy sits out on the right side of the plot, and the rest line up on the left side)
+This looks OK, except Sandy is sticking out a bit, but removing her doesn't change things much. Now let's look at how well the covariates are fitting...
+
+```{r fig.width=7, fig.height=10}
+par(mfrow=c(2,1), mar=c(4.1,4.1,3,1))
+plot(Data$Minpressure_Updated.2014, resid(modJSVH), col=Data$ColourMF, ylim=c(min(resid(modJSVH)), 0.5+max(resid(modJSVH))), pch=15,
+     xlab="Minimum pressure", ylab="Residuals", main="Model fit of minimum pressure")
+text(Data$Minpressure_Updated.2014[BigH], resid(modJSVH)[BigH], Data$Name[BigH], adj=c(0.2,-0.7))
+legend(910, 2.8, c("Male", "Female"), fill=c("lightblue", "pink"))
+
+plot((Data$NDAM), resid(modJSVH), col=Data$ColourMF, ylim=c(min(resid(modJSVH)), 0.5+max(resid(modJSVH))), pch=15,
+     xlab="Normalized Damage", ylab="Residuals", main="Model fit of normalized damage")
+text((Data$NDAM[BigH]), resid(modJSVH)[BigH], Data$Name[BigH], adj=c(0.8,-0.7))
+legend(4e4, 2.8, c("Male", "Female"), fill=c("lightblue", "pink"))
+```
+Minimum pressure looks OK, but does normalized damage look like it's curved? The skew in the normalized damage makes it a bit harder to see, but we can transform the x-axis to take a better look...
+
+```{r fig.width=7, fig.height=6}
+par(mfrow=c(1,1), mar=c(4.1,4.1,3,1))
+plot(gam(resid(modJSVH)~s(sqrt(Data$NDAM)), data=Data), ylim=c(min(resid(modJSVH)), 0.5+max(resid(modJSVH))), 
+     xlab="Normalized Damage", ylab="Residuals", main="Model fit of (transformed) normalized damage", rug=FALSE, shade=TRUE)
+points(sqrt(Data$NDAM), resid(modJSVH), col=Data$ColourMF, pch=15)
+text(sqrt(Data$NDAM[BigH]), resid(modJSVH)[BigH], Data$Name[BigH], adj=c(0.8,-0.7))
+legend(2e2, 2.8, c("Male", "Female"), fill=c("lightblue", "pink"))
+```
+The fitted line is a spline, to help visualise teh relationship. It definitely looks curved downwards, and is shouting "fit a quadratic!" at me.
+
+So, let's shut it up and fit a quadratic...
+
+```{r }
+# Fit model with NDAM and NDAM squared
+Data$NDAM.sq=Data$NDAM.sc^2
+modJSVH.sq=gam(alldeaths~MasFem.sc*(Minpressure.2014.sc+NDAM.sc +NDAM.sq), data=Data, family=negbin(theta=c(0.2,10)))
+summary(modJSVH.sq)
+```
+and look at the plot...
+```{r fig.width=7, fig.height=6}
+par(mfrow=c(1,1), mar=c(4.1,4.1,3,1))
+plot(gam(resid(modJSVH.sq)~s(sqrt(Data$NDAM)), data=Data), ylim=c(min(resid(modJSVH.sq)), 0.5+max(resid(modJSVH.sq))), 
+     xlab="Normalized Damage", ylab="Residuals", main="Model fit of (transformed) normalized damage", rug=FALSE, shade=TRUE)
+points(sqrt(Data$NDAM), resid(modJSVH.sq), col=Data$ColourMF, pch=15)
+text(sqrt(Data$NDAM[BigH]), resid(modJSVH.sq)[BigH], Data$Name[BigH], adj=c(0.8,-0.7))
+legend(2e2, 2.8, c("Male", "Female"), fill=c("lightblue", "pink"))
+```
+This still looks a bit bendy. But the nice curve above was on the square root scale, so let's use that...
+
+```{r }
+# Fit model with sqrt(NDAM) and sqrt(NDAM)^2. The latter is also abs(NDAM.sc)
+Data$NDAM.sqrt.sc=scale(sqrt(Data$NDAM))
+Data$NDAM.abs=Data$NDAM.sqrt^2
+modJSVH.sqrt=gam(alldeaths~MasFem.sc*(Minpressure.2014.sc+NDAM.sqrt.sc+NDAM.abs), data=Data, family=negbin(theta=c(0.2,10)))
+# summary(modJSVH.sqrt)
+```
+and look at the plot...
+```{r fig.width=7, fig.height=6}
+par(mfrow=c(1,1), mar=c(4.1,4.1,3,1))
+plot(gam(resid(modJSVH.sqrt)~s(sqrt(Data$NDAM)), data=Data), ylim=c(min(resid(modJSVH.sqrt)), 0.5+max(resid(modJSVH.sqrt))), 
+     xlab="Normalized Damage", ylab="Residuals", main="Model fit of (transformed) normalized damage", rug=FALSE, shade=TRUE)
+points(sqrt(Data$NDAM), resid(modJSVH.sqrt), col=Data$ColourMF, pch=15)
+text(sqrt(Data$NDAM[BigH]), resid(modJSVH.sqrt)[BigH], Data$Name[BigH], adj=c(0.8,-0.7))
+legend(2e2, 2.8, c("Male", "Female"), fill=c("lightblue", "pink"))
+```
+All of which looks so much better. So, this is a nicer model: the only difference from the model used in the paper is that we are assuming that any effect of normalized damage is non-linear.
+
+And now what does the model look like?
+```{r}
+ summary(modJSVH.sqrt)
+```
+Oh look! The gender effect has totally disappeared! The only effect is of normalised damage.
+
+## Effects of Year
+
+Finally, I added Year as a effect in various ways (linear, spline, random effect):
+```{r message=FALSE, warning=FALSE}
+modJSVH.year.linear=gam(alldeaths~Year+MasFem.sc*(Minpressure.2014.sc+NDAM.sqrt.sc+NDAM.abs), data=Data, family=negbin(theta=c(0.2,10)))
+ round(summary(modJSVH.year.linear)$p.table,2)
+modJSVH.year.spline=gam(alldeaths~s(Year)+MasFem.sc*(Minpressure.2014.sc+NDAM.sqrt.sc+NDAM.abs), data=Data, family=negbin(theta=c(0.2,10)))
+summary(modJSVH.year.spline)$s.table
+modJSVH.year.rf=gamm(alldeaths~MasFem.sc*(Minpressure.2014.sc+NDAM.sqrt.sc+NDAM.abs), random=list(Year=~1),data=Data, family=negbin(theta=c(0.2,10)))
+VarCorr(modJSVH.year.rf$lme)
+
+```
+There was no effect anywhere:
+* in the linear model, the Year effect is pretty much zero, 
+* in the smoothed fit the effect gets shrunk away so there is only one degree of freedom (i.e. a straight line): it revets to the linear model
+* as a random effect, the standard deviation of the year effect is `r round(as.numeric(VarCorr(modJSVH.year.rf$lme))[3]/(as.numeric(VarCorr(modJSVH.year.rf$lme))[3]+as.numeric(VarCorr(modJSVH.year.rf$lme))[4])*100,2)`% of the residual standard deviation
+
+So the fact that only female names were used until 1979 turns out to be a red herring.
+
+## Just Gender
+
+One can also look simply at the effect of gender of hurricane name, which avoids the issues of how feminine Sandy is. TL;DR version: the results are qualitatively the same.
+
+```{r fig.width=7, fig.height=6}
+modJSVH.gender=gam(alldeaths~Gender_MF*(Minpressure.2014.sc+NDAM.sc), data=Data, family=negbin(theta=c(0.2,10)))
+summary(modJSVH)
+
+par(mfrow=c(1,1), mar=c(4.1,4.1,3,1))
+plot(gam(resid(modJSVH.gender)~s(sqrt(Data$NDAM)), data=Data), ylim=c(min(resid(modJSVH.gender)), 0.5+max(resid(modJSVH.gender))), 
+     xlab="Normalized Damage", ylab="Residuals", main="Model fit of (transformed) normalized damage", rug=FALSE, shade=TRUE)
+points(sqrt(Data$NDAM), resid(modJSVH.gender), col=Data$ColourMF, pch=15)
+text(sqrt(Data$NDAM[BigH]), resid(modJSVH.gender)[BigH], Data$Name[BigH], adj=c(0.8,-0.7))
+legend(2e2, 2.8, c("Male", "Female"), fill=c("lightblue", "pink"))
+```
+With the quadratic on sqrt(NDAM)...
+```{r }
+# Fit model with sqrt(NDAM) and sqrt(NDAM)^2. The latter is also abs(NDAM.sc)
+modJSVH.sqrt.gender=gam(alldeaths~Gender_MF*(Minpressure.2014.sc+NDAM.sqrt.sc+NDAM.abs), data=Data, family=negbin(theta=c(0.2,10)))
+# summary(modJSVH.sqrt)
+```
+The residual plot...
+```{r fig.width=7, fig.height=6}
+par(mfrow=c(1,1), mar=c(4.1,4.1,3,1))
+plot(gam(resid(modJSVH.sqrt.gender)~s(sqrt(Data$NDAM)), data=Data), ylim=c(min(resid(modJSVH.sqrt.gender)), 0.5+max(resid(modJSVH.sqrt.gender))), 
+     xlab="Normalized Damage", ylab="Residuals", main="Model fit of (transformed) normalized damage", rug=FALSE, shade=TRUE)
+points(sqrt(Data$NDAM), resid(modJSVH.sqrt.gender), col=Data$ColourMF, pch=15)
+text(sqrt(Data$NDAM[BigH]), resid(modJSVH.sqrt.gender)[BigH], Data$Name[BigH], adj=c(0.8,-0.7))
+legend(2e2, 2.8, c("Male", "Female"), fill=c("lightblue", "pink"))
+```
+And the model:
+```{r}
+ summary(modJSVH.sqrt)
+```
+Again, like a magician I have magicked away the gender effect!
