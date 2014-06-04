@@ -1,13 +1,6 @@
 Hurricanes
 ==========
-This contains R code (including markdown) to re-analyse the hurricanes data in 
-
-    Kiju Jung,
-    Sharon Shavitt,
-    Madhu Viswanathan,
-    and Joseph M. Hilbe
-
-Female hurricanes are deadlier than male hurricanes PNAS 2014 ; published ahead of print June 2, 2014, doi:10.1073/pnas.1402786111 
+This contains R code (including markdown) to re-analyse the hurricanes data in Jung et al (2014) Female hurricanes are deadlier than male hurricanes PNAS, doi:10.1073/pnas.1402786111 
 
 The files are
 * Hurricanes.R - R code
