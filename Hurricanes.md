@@ -1,7 +1,7 @@
 Hurricanes: the female of the species in no more deadly than the male
 ========================================================
 
-This is a re-analysis of the Jung *et al* paper [Female hurricanes are deadlier than male hurricanes](http://dx.doi.org/10.1073/pnas.1402786111), complete with the R code. 
+This is a re-analysis of the Jung *et al* paper [Female hurricanes are deadlier than male hurricanes](http://dx.doi.org/10.1073/pnas.1402786111), complete with the R code. The output is [available on RPubs](http://rpubs.com/oharar/19171), and the code on [GitHub](https://github.com/oharar/Hurricanes) (thanks to RStudio for RPubs, and RStudio, which integrates everything so nicely)
 
 First, read in the data, and do some simple arrangements, in particular selecting an ironic colour scheme, and noting which hurricanes killed more than 100 people.
 
