@@ -1,0 +1,62 @@
+%% PNAStwoS.tex
+%% Sample file to use for PNAS articles prepared in LaTeX
+%% For two column PNAS articles
+%% Version1: Apr 15, 2008
+%% Version2: Oct 04, 2013
+
+%% BASIC CLASS FILE
+\documentclass{pnastwo}
+
+%% ADDITIONAL OPTIONAL STYLE FILES Font specification
+
+%\usepackage{pnastwoF}
+
+
+
+%% OPTIONAL MACRO DEFINITIONS
+\def\s{\sigma}
+%%%%%%%%%%%%
+%% For PNAS Only:
+\url{www.pnas.org/cgi/doi/10.1073/pnas.0709640104}
+\copyrightyear{2008}
+\issuedate{Issue Date}
+\volume{Volume}
+\issuenumber{Issue Number}
+%\setcounter{page}{2687} %Set page number here if desired
+%%%%%%%%%%%%
+
+\usepackage[latin1]{inputenc}
+\usepackage[english]{babel}
+
+\begin{document}
+
+\title{Hurricanes: the female of the species in no more deadly than the male}
+\author{R.B. O'Hara\affil{1}{Biodiversity and Climte CHange Research Centre, BiK-F, Frankfurt am Main, Germany}}
+\contributor{Submitted to Proceedings of the National Academy of Sciences
+of the United States of America}
+
+\maketitle
+
+\SweaveOpts{concordance=TRUE}
+
+\begin{article}
+\begin{abstract}
+{A re-analysis of the data on damage, death toll, strength, and name of hurricanes provided by Jung \emph{et al.} \cite{Jungetal}}
+\end{abstract}
+
+\keywords{monolayer | structure | x-ray reflectivity | molecular electronics}
+
+\abbreviations{SAM, self-assembled monolayer; OTS, octadecyltrichlorosilane}
+
+Jung \emph{et al.} 
+
+
+
+\begin{thebibliography}{10}
+\bibitem{Jungetal}
+K.~Jung, S.~Shavitt, M.~Viswanathan, J.M.~Hilbe, {\em Female hurricanes are deadlier than male hurricanes}, Proceedings of the National Academy of Sciences, early edition (2014). DOI: 10.1073/pnas.1402786111
+
+\end{thebibliography}
+
+
+\end{document}
