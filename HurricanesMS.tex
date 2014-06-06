@@ -5,7 +5,56 @@
 %% Version2: Oct 04, 2013
 
 %% BASIC CLASS FILE
-\documentclass{pnastwo}
+\documentclass{pnastwo}\usepackage[]{graphicx}\usepackage[]{color}
+%% maxwidth is the original width if it is less than linewidth
+%% otherwise use linewidth (to make sure the graphics do not exceed the margin)
+\makeatletter
+\def\maxwidth{ %
+  \ifdim\Gin@nat@width>\linewidth
+    \linewidth
+  \else
+    \Gin@nat@width
+  \fi
+}
+\makeatother
+
+\definecolor{fgcolor}{rgb}{0.345, 0.345, 0.345}
+\newcommand{\hlnum}[1]{\textcolor[rgb]{0.686,0.059,0.569}{#1}}%
+\newcommand{\hlstr}[1]{\textcolor[rgb]{0.192,0.494,0.8}{#1}}%
+\newcommand{\hlcom}[1]{\textcolor[rgb]{0.678,0.584,0.686}{\textit{#1}}}%
+\newcommand{\hlopt}[1]{\textcolor[rgb]{0,0,0}{#1}}%
+\newcommand{\hlstd}[1]{\textcolor[rgb]{0.345,0.345,0.345}{#1}}%
+\newcommand{\hlkwa}[1]{\textcolor[rgb]{0.161,0.373,0.58}{\textbf{#1}}}%
+\newcommand{\hlkwb}[1]{\textcolor[rgb]{0.69,0.353,0.396}{#1}}%
+\newcommand{\hlkwc}[1]{\textcolor[rgb]{0.333,0.667,0.333}{#1}}%
+\newcommand{\hlkwd}[1]{\textcolor[rgb]{0.737,0.353,0.396}{\textbf{#1}}}%
+
+\usepackage{framed}
+\makeatletter
+\newenvironment{kframe}{%
+ \def\at@end@of@kframe{}%
+ \ifinner\ifhmode%
+  \def\at@end@of@kframe{\end{minipage}}%
+  \begin{minipage}{\columnwidth}%
+ \fi\fi%
+ \def\FrameCommand##1{\hskip\@totalleftmargin \hskip-\fboxsep
+ \colorbox{shadecolor}{##1}\hskip-\fboxsep
+     % There is no \\@totalrightmargin, so:
+     \hskip-\linewidth \hskip-\@totalleftmargin \hskip\columnwidth}%
+ \MakeFramed {\advance\hsize-\width
+   \@totalleftmargin\z@ \linewidth\hsize
+   \@setminipage}}%
+ {\par\unskip\endMakeFramed%
+ \at@end@of@kframe}
+\makeatother
+
+\definecolor{shadecolor}{rgb}{.97, .97, .97}
+\definecolor{messagecolor}{rgb}{0, 0, 0}
+\definecolor{warningcolor}{rgb}{1, 0, 1}
+\definecolor{errorcolor}{rgb}{1, 0, 0}
+\newenvironment{knitrout}{}{} % an empty environment to be redefined in TeX
+
+\usepackage{alltt}
 
 %% ADDITIONAL OPTIONAL STYLE FILES Font specification
 
@@ -27,6 +76,7 @@
 
 \usepackage[latin1]{inputenc}
 \usepackage[english]{babel}
+\IfFileExists{upquote.sty}{\usepackage{upquote}}{}
 
 \begin{document}
 
@@ -37,26 +87,49 @@ of the United States of America}
 
 \maketitle
 
-\SweaveOpts{concordance=TRUE}
-
 \begin{article}
 \begin{abstract}
-{A re-analysis of the data on damage, death toll, strength, and name of hurricanes provided by Jung \emph{et al.} \cite{Jungetal}}
+{A re-analysis of the data on damage, death toll, strength, and name of hurricanes provided by Jung {\em  et al.} \cite{1} suggests that feminine-names hurricanes do not cause more deaths, because the effects of damage had been mis-specified.}
 \end{abstract}
 
-\keywords{monolayer | structure | x-ray reflectivity | molecular electronics}
+\keywords{hurricanes | gender | residuals | plotting}
 
-\abbreviations{SAM, self-assembled monolayer; OTS, octadecyltrichlorosilane}
-
-Jung \emph{et al.} 
+\abbreviations{AIC, Akaike's Information Criterion}
 
 
+
+
+Jung {\em et al.} \cite{1} analysed data on hurricanes and concluded that if hurricanes were more powerful, they were more deadly when the names were more feminine. I suggest that this was an artifact of an incorrect analysis, and a standard exploration of the fit of the model shows this. After the authors' model is fitted, an examination of the residuals suggests reveals structure in the effect of normalized damage: rather than the residuals being an unstructured cloud, thes show a distinctly curved shape (Figure~\ref{fig:residplots}a).\\
+
+If we adjust the model by adding the square root of damage as a term, this structure is no longer present (Figure~\ref{fig:residplots}b). The moel fit is improved (AIC for original model: 660.7, AIC for model with square root term: 634.9) In addition, name feminity no longer has an effect: removing the effects of feminity leads to a more parsimonious model (AIC: 630.1).\\
+
+From a statistical perspective, classical model checking appraoches lead to a better model. Whether it is more likely that the effects of damage are non-linear, or whether they are linear and an effect of hurricane name is one where expert knowledge (of those studying responses to disaster) should be called upon.
+
+\begin{acknowledgments}
+More details about the analysis are provided at http://rpubs.com/oharar/19171. This study was funded by the ''Landesoffensive zur Entwicklung wissenschaftlich-\"{o}konomischer Exzellenz'' (LOEWE) of the state Hesse in Germany through the Biodiversity and Climate Research Centre (Bik-F).\end{acknowledgments}
 
 \begin{thebibliography}{10}
-\bibitem{Jungetal}
+\bibitem{1}
 K.~Jung, S.~Shavitt, M.~Viswanathan, J.M.~Hilbe, {\em Female hurricanes are deadlier than male hurricanes}, Proceedings of the National Academy of Sciences, early edition (2014). DOI: 10.1073/pnas.1402786111
 
 \end{thebibliography}
 
+\end{article}
+
+\begin{figure}
+\caption{Plots of deviance residuals against squar root of normalised damage for (a) model used in \cite{1}, (b) model with square root of normalised damage, and its interaction with perceived masculinity-feminity of hurricane names}
+\label{fig:residplots}
+\begin{knitrout}
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}
+
+{\centering \includegraphics[width=8cm,height=8cm]{figure/unnamed-chunk-1} 
+
+}
+
+
+
+\end{knitrout}
+
+\end{figure}
 
 \end{document}
