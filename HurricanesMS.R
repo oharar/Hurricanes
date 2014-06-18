@@ -29,54 +29,18 @@ summary(modJSVH)
 modJSVH.gender=glm.nb(alldeaths~Gender_MF*(Minpressure.2014.sc+NDAM.sc), data=Data)
 summary(modJSVH.gender)
 
-# Plot the residuals 
-par(mfrow=c(1,1), mar=c(4.1,4.1,1,1))
-plot(log(fitted(modJSVH)), resid(modJSVH), col=Data$ColourMF, ylim=c(min(resid(modJSVH)), 0.5+max(resid(modJSVH))), pch=15,
-     xlab="Fitted values", ylab="Residuals", main="Residual plot against fitted values")
-text(log(fitted(modJSVH)[BigH]), resid(modJSVH)[BigH], Data$Name[BigH], adj=c(0.7,-0.7))
-legend(1984, 200, c("Male", "Female"), fill=c("blue", "red"))
-
-par(mfrow=c(2,1), mar=c(4.1,4.1,1,1))
-plot(Data$Minpressure_Updated.2014, resid(modJSVH), col=Data$ColourMF, ylim=c(min(resid(modJSVH)), 0.5+max(resid(modJSVH))), pch=15,
-     xlab="Minimum pressure", ylab="Residuals")
-text(Data$Minpressure_Updated.2014[BigH], resid(modJSVH)[BigH], Data$Name[BigH], adj=c(0.2,-0.7))
-legend(910, 2.8, c("Male", "Female"), fill=c("blue", "red"))
-
-plot((Data$NDAM), resid(modJSVH), col=Data$ColourMF, ylim=c(min(resid(modJSVH)), 0.5+max(resid(modJSVH))), pch=15,
-     xlab="Normalized Damage", ylab="Residuals")
-text((Data$NDAM[BigH]), resid(modJSVH)[BigH], Data$Name[BigH], adj=c(0.8,-0.7))
-legend(4e4, 2.8, c("Male", "Female"), fill=c("blue", "red"))
-
-par(mfrow=c(1,1), mar=c(4.1,4.1,1,1))
-plot(sqrt(Data$NDAM), resid(modJSVH), col=Data$ColourMF, ylim=c(min(resid(modJSVH)), 0.5+max(resid(modJSVH))), pch=15,
-     xlab="Normalized Damage", ylab="Residuals")
-text(sqrt(Data$NDAM[BigH]), resid(modJSVH)[BigH], Data$Name[BigH], adj=c(0.8,-0.7))
-legend(2e2, 2.8, c("Male", "Female"), fill=c("blue", "red"))
-
-
-plot(gam(resid(modJSVH)~s(sqrt(Data$NDAM)), data=Data), ylim=c(min(resid(modJSVH)), 0.5+max(resid(modJSVH))), 
-     xlab="Normalized Damage", ylab="Residuals", rug=FALSE, shade=TRUE)
-points(sqrt(Data$NDAM), resid(modJSVH), col=Data$ColourMF, pch=15)
-text(sqrt(Data$NDAM[BigH]), resid(modJSVH)[BigH], Data$Name[BigH], adj=c(0.8,-0.7))
-legend(2e2, 2.8, c("Male", "Female"), fill=c("blue", "red"))
-
-# Add a squared term
-# Fit the model used in paper
-modJSVH.sq=glm.nb(alldeaths~MasFem.sc*(Minpressure.2014.sc+NDAM.sc+I(NDAM.sc^2)), data=Data)
-summary(modJSVH.sq)
-modJSVH.gender.sq=glm.nb(alldeaths~Gender_MF*(Minpressure.2014.sc+NDAM.sc+I(NDAM.sc^2)), data=Data)
-summary(modJSVH.gender.sq)
-
 # Use sqrt(NDAM)
 Data$NDAMsqrt=sqrt(Data$NDAM)
 Data$NDAMsqrt.sc=scale(Data$NDAMsqrt)
 
 # Original model, but with sqrt(NDAM)
 modJSVH.sqrt=glm.nb(alldeaths~MasFem.sc*(Minpressure.2014.sc+NDAMsqrt.sc), data=Data)
+
 summary(modJSVH.sqrt)
 # Add quadratic term (-> abs(NDAM))
 modJSVH.sqrt.sq=glm.nb(alldeaths~MasFem.sc*(Minpressure.2014.sc+NDAMsqrt.sc+NDAM.sc), data=Data)
-summary(modJSVH.sqrt.sq)
+
+xtable(summary(modJSVH.sqrt.sq), digits=2)
 
 # Fit a similar model, but simply using gender as a factor
 modJSVH.gender.sqrt=glm.nb(alldeaths~Gender_MF*(Minpressure.2014.sc+NDAMsqrt.sc), data=Data)

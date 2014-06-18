@@ -1,5 +1,6 @@
 library(gdata)
 library(MASS)
+
 Data=read.xls("http://www.pnas.org/content/suppl/2014/05/30/1402786111.DCSupplemental/pnas.1402786111.sd01.xlsx", nrows=92, as.is=TRUE)
 Data$Minpressure.2014.sc=scale(Data$Minpressure_Updated.2014)
 Data$NDAM.sc=scale(Data$NDAM)
@@ -13,6 +14,7 @@ modlog=glm.nb(alldeaths~MasFem*(Minpressure_Updated.2014+log(NDAM)), data=Data, 
 mod02Inv=glm.nb(alldeaths~MasFem*(Minpressure_Updated.2014+I(NDAM^-0.5)), data=Data, init.theta=0.9)
 mod2Inv=glm.nb(alldeaths~MasFem*(Minpressure_Updated.2014+I(NDAM^-2)), data=Data)
 mod3Inv=glm.nb(alldeaths~MasFem*(Minpressure_Updated.2014+I(NDAM^-3)), data=Data)
+
 
 
 cat("Original: ", round(mod1$aic,1), 
@@ -39,20 +41,30 @@ SimAllDeaths=function(masfem, GLM, dat) {
 
 SimAllDeaths(masfem=mean(Data$MasFem), GLM=modJSVH, dat=Data)
 
-PredMasFem=seq(min(Data$MasFem), max(Data$MasFem), length=50)
+PredMasFem=seq(min(Data$MasFem), max(Data$MasFem), length=30)
+# Use if parallel pacakge isn't installed
 PredDeaths=as.data.frame(t(sapply(PredMasFem, function(masfem, GLM,dat, nsim) {
-  sims=replicate(nsim, PredAllDeaths(masfem, GLM=GLM, dat=dat))
+  sims=replicate(nsim, SimAllDeaths(masfem, GLM=GLM, dat=dat))
   c(Mean=mean(sims), LCI=quantile(sims, 0.025), UCI=quantile(sims,0.975))
-}, GLM=modJSVH, dat=Data, nsim=1e5)))
+}, GLM=modJSVH, dat=Data, nsim=1e4)))
 
+library(parallel)
+PredDeaths.lst=mclapply(PredMasFem, function(masfem, GLM,dat, nsim) {
+  sims=replicate(nsim, SimAllDeaths(masfem, GLM=GLM, dat=dat))
+  c(Mean=mean(sims), LCI=quantile(sims, 0.025), UCI=quantile(sims,0.975))
+}, GLM=modJSVH, dat=Data, nsim=1e4)
 
-PredDeaths$LCI=PredDeaths$MeanDeaths-PredDeaths$VarDeaths
-PredDeaths$UCI=PredDeaths$MeanDeaths+PredDeaths$VarDeaths
+PredDeaths=data.frame(
+  Mean=unlist(lapply(PredDeaths.lst, function(lst) lst["Mean"])),
+  LCI=unlist(lapply(PredDeaths.lst, function(lst) lst["LCI.2.5%"])),
+  UCI=unlist(lapply(PredDeaths.lst, function(lst) lst["UCI.97.5%"]))
+)
 
 plot(PredMasFem, log(PredDeaths$Mean), type="l", ylim=range(log(PredDeaths)),
      xlab="Feminity Index", ylab="log(Deaths)")
 polygon(c(PredMasFem,rev(PredMasFem)), log(c(PredDeaths$LCI, rev(PredDeaths$UCI))), col="grey70", border=NA)
 lines(PredMasFem, log(PredDeaths$Mean))
+lines(PredMasFem, log(ExPredDeaths), col=2)
 
 
 
@@ -60,4 +72,24 @@ plot(PredMasFem, PredDeaths$Mean/1e6, type="l", ylim=c(0,max(PredDeaths$UCI/1e6)
      xlab="Feminity Index", ylab="Deaths, millions")
 polygon(c(PredMasFem,rev(PredMasFem)), c(PredDeaths$LCI, rev(PredDeaths$UCI))/1e6, col="grey70", border=NA)
 lines(PredMasFem, PredDeaths$Mean/1e6)
+
+#######################
+# Look at joint effects of NDAM & min. pressure
+
+modJSVH.sc=glm.nb(alldeaths~MasFem.sc*(Minpressure.2014.sc+NDAM.sc), data=Data)
+summary(modJSVH.sc)
+MasFemEff=coef(modJSVH.sc)["MasFem.sc"]+as.matrix(Data[,c("Minpressure.2014.sc", "NDAM.sc")])%*%
+  as.matrix(coef(modJSVH.sc)[c("MasFem.sc:Minpressure.2014.sc", "MasFem.sc:NDAM.sc")])
+
+
+MasFemEff=coef(modJSVH)["MasFem"]+as.matrix(Data[,c("Minpressure_Updated.2014", "NDAM")])%*%
+  as.matrix(coef(modJSVH)[c("MasFem:Minpressure_Updated.2014", "MasFem:NDAM")])
+
+par(mfrow=c(1,2), mar=c(4.1,2,3,1), oma=c(0,2,0,0))
+plot(Data$Minpressure_Updated.2014, MasFemEff, xlab="Minimum pressure", ylab="", main="Pressure")
+abline(lm(MasFemEff~Data$Minpressure_Updated.2014))
+plot(Data$NDAM[Data$NDAM<4e4], MasFemEff[Data$NDAM<4e4], xlab="Normalised damage", ylab="", main="Damage")
+abline(lm(MasFemEff[Data$NDAM<4e4]~Data$NDAM[Data$NDAM<4e4]))
+mtext("Femininity index", 2, outer=TRUE, line=0.5)
+
 
